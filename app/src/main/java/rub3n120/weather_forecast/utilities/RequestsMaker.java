@@ -13,6 +13,11 @@ import java.net.URL;
 import rub3n120.weather_forecast.model.WeatherData;
 
 public class RequestsMaker {
+    //Request Response Codes
+    public static final int CURRENT_WEATHER_OKAY = 1;
+    //Data
+    private WeatherData weatherData;
+    //
     private Handler messager;
     private HandlerThread forecastHandlerThread;
     private Handler forecastHandler;
@@ -59,7 +64,9 @@ public class RequestsMaker {
 
                     // Convertir JSON a objeto Java usando Gson
                     Gson gson = new Gson();
-                    WeatherData user = gson.fromJson(response.toString(), WeatherData.class);
+                    weatherData = gson.fromJson(response.toString(), WeatherData.class);
+                    //Send Response Code
+                    messager.sendEmptyMessage(CURRENT_WEATHER_OKAY);
 
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -68,5 +75,9 @@ public class RequestsMaker {
         });
 
 
+    }
+
+    public WeatherData getWeatherData() {
+        return weatherData;
     }
 }

@@ -6,7 +6,9 @@ import android.location.LocationRequest;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.Message;
 import android.util.Log;
+import android.widget.TextView;
 
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
@@ -31,6 +33,9 @@ public class WeatherForecastActivity extends AppCompatActivity {
     private double longitude;
     private final String KEY = "4017cf2206ff557ee727acf18e4baac5";
     private FusedLocationProviderClient fusedLocationProviderClient;
+    //HUD Components
+    private TextView temperatureTextView;
+    private TextView locationTextView;
 
 
     @Override
@@ -43,24 +48,42 @@ public class WeatherForecastActivity extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
-        // Inicializar el FusedLocationProviderClient
-        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
+        initComponents();
+        GetCurrentWeather();
 
-        // Obtener la última ubicación conocida
-        getDeviceLocation();
-        //messager = new Handler(Looper.getMainLooper());
-        requestsMaker = new RequestsMaker(messager);
-        requestsMaker.getForecast(getCurrentWeatherDataEndPoint());
     }
 
+    private void initComponents(){
+        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
+        //Handlers
+        messager = new Handler(Looper.getMainLooper()){
+            @Override
+            public void handleMessage(@NonNull Message msg) {
+                if (msg.what == RequestsMaker.CURRENT_WEATHER_OKAY){
+                    SetCurrentWeatherDataOnHUD();
+                }
+            }
+        };
+        requestsMaker = new RequestsMaker(messager);
+        //HUD
+        initComponentsOfHUD();
+    }
+
+    private void initComponentsOfHUD(){
+        temperatureTextView = findViewById(R.id.temperatureTextView);
+        locationTextView = findViewById(R.id.locationTextView);
+    }
 
     private String getCurrentWeatherDataEndPoint() {
-
-
         return "https://api.openweathermap.org/data/2.5/weather?lat=" + latitude + "&lon=" + longitude + "&appid=" + KEY;
     }
 
-    private void getDeviceLocation() {
+    private void SetCurrentWeatherDataOnHUD(){
+        temperatureTextView.setText(String.valueOf(requestsMaker.getWeatherData().getMain().getTemp()));
+        locationTextView.setText(String.valueOf(requestsMaker.getWeatherData().getName()));
+    }
+
+    private void GetCurrentWeather(){
         if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
             //    ActivityCompat#requestPermissions
@@ -79,13 +102,13 @@ public class WeatherForecastActivity extends AppCompatActivity {
                     Location location = task.getResult();
                     latitude = location.getLatitude();
                     longitude = location.getLongitude();
-                    System.out.println(location.getLatitude());
-                    System.out.println(location.getLongitude());
-                    System.out.println(":)");
+                    //Call the API having the user's location
+                    requestsMaker.getForecast(getCurrentWeatherDataEndPoint());
                 } else {
+                    System.out.println("Error getting location");
                 }
             }
         });
-
     }
+
 }
